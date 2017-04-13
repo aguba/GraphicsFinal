@@ -9,8 +9,8 @@ var planeGeometry = new THREE.PlaneGeometry(1, 1);
 var planeMaterial = new THREE.MeshStandardMaterial({ 
     metalness: 0,
     roughness: 0.2,
-    map: new THREE.TextureLoader().load('../images/tile.jpg'),
-    normalMap: new THREE.TextureLoader().load('../images/tile_normal.jpg') });
+    map: new THREE.TextureLoader().load('/images/tile.jpg'),
+    normalMap: new THREE.TextureLoader().load('/images/tile_normal.jpg') });
 
 var boxIsIrregular = false;
 var boxGeometry = new THREE.BoxGeometry(1, 1, 1);
@@ -71,7 +71,7 @@ window.onload = function () {
     renderer.setPixelRatio(devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x808080);
-    renderer.shadowMapEnabled = true;
+    renderer.shadowMap.enabled = true;
     document.getElementById("container").appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
