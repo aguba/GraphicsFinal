@@ -9,24 +9,24 @@ var planeGeometry = new THREE.PlaneGeometry(1, 1);
 var planeMaterial = new THREE.MeshStandardMaterial({ 
     metalness: 0,
     roughness: 0.2,
-    map: new THREE.TextureLoader().load('/images/tile.jpg'),
-    normalMap: new THREE.TextureLoader().load('/images/tile_normal.jpg') });
+    map: new THREE.TextureLoader().load('../images/tile.jpg'),
+    normalMap: new THREE.TextureLoader().load('../images/tile_normal.jpg') });
 
 var boxIsIrregular = false;
 var boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 var boxMaterial = new THREE.MeshStandardMaterial({ 
     metalness: 0,
     roughness: 0.2,
-    map: new THREE.TextureLoader().load('/images/tile.jpg'),
-    normalMap: new THREE.TextureLoader().load('/images/tile_normal.jpg') });
+    map: new THREE.TextureLoader().load('../images/tile.jpg'),
+    normalMap: new THREE.TextureLoader().load('../images/tile_normal.jpg') });
 
 var boxMaterials = [];
 var boxMaterialIndex = 0;
 var textures = ['tile', 'brick'];
 textures.forEach(function(textureName, index){
     var loader = new THREE.TextureLoader();
-    boxMaterial.map = loader.load('/images/' + textureName + '.jpg');
-    boxMaterial.normalMap = loader.load('/images/' + textureName + '_normal.jpg');
+    boxMaterial.map = loader.load('../images/' + textureName + '.jpg');
+    boxMaterial.normalMap = loader.load('../images/' + textureName + '_normal.jpg');
     boxMaterial.needsUpdate = true;
     boxMaterials[index] = boxMaterial.clone();
 });
