@@ -2,69 +2,65 @@ var scene, camera, renderer;
 var interval = 1;
 var aspectRatio = window.innerWidth / window.innerHeight;
 
-var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
+var raycaster;
+var mouse;
 
-var planeGeometry = new THREE.PlaneGeometry(1, 1);
-var planeMaterial = new THREE.MeshStandardMaterial({ 
-    metalness: 0,
-    roughness: 0.2,
-    map: new THREE.TextureLoader().load('../images/tile.jpg'),
-    normalMap: new THREE.TextureLoader().load('../images/tile_normal.jpg') });
+var planeGeometry;
+var planeMaterial;
 
-var boxIsIrregular = false;
-var boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-var boxMaterial = new THREE.MeshStandardMaterial({ 
-    metalness: 0,
-    roughness: 0.2,
-    map: new THREE.TextureLoader().load('../images/tile.jpg'),
-    normalMap: new THREE.TextureLoader().load('../images/tile_normal.jpg') });
+var boxType = 'block';
+var boxGeometry;
 
 var boxMaterials = [];
 var boxMaterialIndex = 0;
-var textures = ['tile', 'brick'];
-textures.forEach(function(textureName, index){
-    var loader = new THREE.TextureLoader();
-    boxMaterial.map = loader.load('../images/' + textureName + '.jpg');
-    boxMaterial.normalMap = loader.load('../images/' + textureName + '_normal.jpg');
-    boxMaterial.needsUpdate = true;
-    boxMaterials[index] = boxMaterial.clone();
-});
+var textures = ['tile.png', 'brick.png', 'glass.png', 'grass.png'];
 
-var hoverBoxMaterial = new THREE.MeshBasicMaterial({
-    color: 'black',
-    transparent: true,
-    opacity: 0.3
-});
-var hoverBox = new THREE.Mesh(boxGeometry, hoverBoxMaterial);
+var hoverBoxMaterial;
+var hoverBox;
 
 var planeSize = 25;
 var fov = 20;
 var orthoWidth = (planeSize / 2) * aspectRatio;
 var orthoHeight = planeSize / 2;
-var planeCenter = new THREE.Vector3(Math.ceil(planeSize / 2), 0, Math.ceil(planeSize / 2));
-var planeCenterTarget = new THREE.Object3D();
-planeCenterTarget.position.set(planeCenter.x, -1, planeCenter.z);
+var planeCenter;
+var planeCenterTarget;
 
 var leftClicked;
 var rightClicked;
 var isDragging;
-var deltaPoint = new THREE.Vector2();
-var worldRot = new THREE.Quaternion();
+var deltaPoint;
+var worldRot;
 
-var mainGroup = new THREE.Group();
-var rotationGroup = new THREE.Group();
-rotationGroup.add(mainGroup);
-rotationGroup.add(hoverBox);
+var mainGroup;
+var rotationGroup;
+
+var jsonObj;
 
 window.onload = function () {
+    init();
 
-    document.getElementById('btnTileTexture').onclick = function(){
+    document.getElementById('btnTileTexture').onclick = function () {
+        boxType = 'block';
         boxMaterialIndex = 0;
     }
 
-    document.getElementById('btnBrickTexture').onclick = function(){
+    document.getElementById('btnBrickTexture').onclick = function () {
+        boxType = 'block';
         boxMaterialIndex = 1;
+    }
+
+    document.getElementById('btnGlassTexture').onclick = function () {
+        boxType = 'block';
+        boxMaterialIndex = 2;
+    }
+
+    document.getElementById('btnGrassTexture').onclick = function () {
+        boxType = 'block';
+        boxMaterialIndex = 3;
+    }
+
+    document.getElementById('btnTorch').onclick = function () {
+        boxType = 'torch';
     }
 
     renderer = new THREE.WebGLRenderer();
@@ -92,19 +88,6 @@ window.onload = function () {
     camera.position.set(-45, 45, -45);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-    var rectGeo = new THREE.BoxGeometry(0.125, 0.5, 0.125);
-    var rectMesh = new THREE.Mesh(rectGeo, boxMaterial);
-    rectMesh.position.set(0, -0.25, 0);
-    mainGroup.add(rectMesh);
-
-    var pointLight = new THREE.PointLight();
-    pointLight.intensity = 0.5;
-    pointLight.castShadow = true;
-    mainGroup.add(pointLight);
-
-    var lightHelp = new THREE.PointLightHelper(pointLight, 0.3);
-    mainGroup.add(lightHelp);
-
     render();
 }
 
@@ -127,17 +110,123 @@ var render = function () {
     requestAnimationFrame(render);
 }
 
+var init = function () {
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    planeGeometry = new THREE.PlaneGeometry(1, 1);
+    planeMaterial = new THREE.MeshStandardMaterial({
+        metalness: 0,
+        roughness: 0.2,
+        map: new THREE.TextureLoader().load('../images/tile.png'),
+        normalMap: new THREE.TextureLoader().load('../images/tile_normal.png')
+    });
+
+    boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+    textures.forEach(function (textureName, index) {
+        boxMaterials[index] = createTextureMaterial(textureName);
+    });
+
+    hoverBoxMaterial = new THREE.MeshBasicMaterial({
+        color: 'black',
+        transparent: true,
+        opacity: 0.3
+    });
+    hoverBox = new THREE.Mesh(boxGeometry, hoverBoxMaterial);
+
+    planeCenter = new THREE.Vector3(Math.ceil(planeSize / 2), 0, Math.ceil(planeSize / 2));
+    planeCenterTarget = new THREE.Object3D();
+    planeCenterTarget.position.set(planeCenter.x, -1, planeCenter.z);
+
+    deltaPoint = new THREE.Vector2();
+    worldRot = new THREE.Quaternion();
+
+    mainGroup = new THREE.Group();
+    rotationGroup = new THREE.Group();
+    rotationGroup.add(mainGroup);
+    rotationGroup.add(hoverBox);
+}
+
+var createTextureMaterial = function (textureName) {
+    var loader;
+    var normStr = '_normal.png';
+    var texture, normal, normalName;
+
+    if (textureName instanceof Array) {
+        loader = new THREE.CubeTextureLoader();
+        textureName.forEach(function (currentTexture, index) {
+            normalName[index] = currentTexture.slice(0, currentTexture.indexOf('.') + normStr);
+        });
+    } else {
+        loader = new THREE.TextureLoader();
+        normalName = textureName.slice(0, textureName.indexOf('.')) + normStr;
+    }
+
+    loader.setPath('../images/');
+
+    var texture = loader.load(textureName);
+    var normal = loader.load(normalName);
+    var material = new THREE.MeshStandardMaterial({
+        map: texture,
+        normalMap: normal,
+        metalness: 0,
+        roughness: 0.2,
+        transparent: true
+    });
+
+    return material;
+}
+
 var degrees = function (angle) {
     return angle * Math.PI / 180;
 }
 
-var createBox = function (boxIsIrregular) {
-    var newBox = new THREE.Mesh(boxGeometry, boxMaterials[boxMaterialIndex]);
-    newBox.castShadow = true;
-    newBox.receiveShadow = true;
-    newBox.name = "box";
+var createBox = function (boxType) {
+    var box;
+    switch (boxType) {
+        case 'block':
+            var newBox = new THREE.Mesh(boxGeometry, boxMaterials[boxMaterialIndex]);
+            newBox.castShadow = true;
+            newBox.receiveShadow = true;
+            newBox.name = "block";
 
-    return newBox;
+            box = newBox;
+            break;
+
+        case 'torch':
+            var torchGeo = new THREE.CylinderGeometry(0.125, 0.0625, 0.5);
+            var torchMat = new THREE.MeshStandardMaterial({
+                transparent: true, color: 'burlywood',
+                metalness: 0, roughness: 1
+            });
+            var torch = new THREE.Mesh(torchGeo, torchMat);
+            torch.position.set(0, -0.25, 0);
+
+            var sphereGeo = new THREE.SphereGeometry(0.125);
+            var sphereMat = new THREE.MeshBasicMaterial({ color: 'darkorange' });
+            var sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            sphere.position.set(0, 0.5, 0);
+            torch.add(sphere);
+
+            var pointLight = new THREE.PointLight('darkorange');
+            pointLight.intensity = 0.5;
+            pointLight.distance = 5;
+            pointLight.castShadow = true;
+            torch.add(pointLight);
+
+            var torchBoxMat = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0
+            });
+            var torchBox = new THREE.Mesh(boxGeometry, torchBoxMat);
+            torchBox.name = 'torch';
+            torchBox.add(torch);
+
+            box = torchBox;
+            break;
+    }
+    return box;
 }
 
 var planeBuilder = function (x, y) {
@@ -145,8 +234,6 @@ var planeBuilder = function (x, y) {
         for (var j = 1; j <= y; j++) {
             var plane = new THREE.Mesh(planeGeometry, planeMaterial);
             plane.position.set(i - planeCenter.x, -0.5, j - planeCenter.z);
-            // plane.position.x = i - planeCenter.x;
-            // plane.position.z = j - planeCenter.z;
             plane.rotation.x = Math.PI * -90 / 180;
             plane.receiveShadow = true;
             plane.name = "plane";
@@ -181,12 +268,12 @@ function onMouseMove(event) {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    var intersect = raycaster.intersectObjects(mainGroup.children, true)[0];
-    // console.log(intersects[0].object.name);
-    // console.log(intersects[0].faceIndex);
+    var intersect = raycaster.intersectObjects(mainGroup.children)[0];
 
-    if(intersect){
+    if (intersect) {
         positionBox(hoverBox, intersect);
+        console.log(intersect.face.normal);
+        console.log(intersect.object.name);
     }
 
     if (leftClicked) {
@@ -206,7 +293,7 @@ function onMouseDown(event) {
 }
 
 function onMouseUp(event) {
-    var intersect = raycaster.intersectObjects(mainGroup.children, true)[0];
+    var intersect = raycaster.intersectObjects(mainGroup.children)[0];
     var obj;
 
     console.log(intersect);
@@ -222,18 +309,14 @@ function onMouseUp(event) {
 
     obj = intersect.object;
 
+
     if (rightClicked) {
-        if (obj.name == "box") {
+        if (obj.name != "plane") {
             mainGroup.remove(obj);
         }
-    } else {
-        var newBox = createBox();
+    } else if (obj.name != 'torch') {
+        var newBox = createBox(boxType);
 
-        // if (obj.name == "plane") {
-        //     newBox.position.set(obj.position.x, 0, obj.position.z);
-        // } else if (obj.name == "box") {
-        //     positionBox(newBox, intersect);
-        // }
         positionBox(newBox, intersect);
         mainGroup.add(newBox);
     }
@@ -246,39 +329,28 @@ function onMouseUp(event) {
 var positionBox = function (box, intersect) {
     var obj = intersect.object;
 
-    if (obj.name == "plane"){
+    if (obj.name == "plane") {
         box.position.set(obj.position.x, 0, obj.position.z);
-    } else if (obj.name == "box") {
-        switch (intersect.faceIndex) {
-            case 0:
-            case 1:
-                box.position.set(obj.position.x + 1, obj.position.y, obj.position.z);
-                break;
+    } else if (obj.name == "block") {
+        var normal = intersect.face.normal;
+        var child = box.children[0];
+        console.log(child);
 
-            case 2:
-            case 3:
-                box.position.set(obj.position.x - 1, obj.position.y, obj.position.z);
-                break;
+        var angle = degrees(45);
+        var mod = 1;
 
-            case 4:
-            case 5:
-                box.position.set(obj.position.x, obj.position.y + 1, obj.position.z);
-                break;
-
-            case 6:
-            case 7:
-                box.position.set(obj.position.x, obj.position.y - 1, obj.position.z);
-                break;
-
-            case 8:
-            case 9:
-                box.position.set(obj.position.x, obj.position.y, obj.position.z + 1);
-                break;
-
-            case 10:
-            case 11:
-                box.position.set(obj.position.x, obj.position.y, obj.position.z - 1);
-                break;
+        if (box.name == 'torch') {
+            mod = 0.75;
+            if (normal.y == -1) {
+                box.rotation.set(degrees(180), 0, 0);
+            } else {
+                box.children[0].rotation.set(angle * normal.z, 0, angle * -normal.x);
+            }
         }
+
+        box.position.set(
+            obj.position.x + normal.x * mod,
+            obj.position.y + normal.y,
+            obj.position.z + normal.z * mod);
     }
 }
