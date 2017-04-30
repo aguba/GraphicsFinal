@@ -163,7 +163,7 @@ var createTextureMaterial = function (textureName) {
         normalName = textureName.slice(0, textureName.indexOf('.')) + normStr;
     }
 
-    loader.setPath('https://github.com/aguba/GraphicsFinal/tree/master/images/');
+    loader.setPath('https://aguba.github.io/GraphicsFinal/images/');
 
     var texture = loader.load(textureName);
     var normal = loader.load(normalName);
