@@ -118,8 +118,8 @@ var init = function () {
     planeMaterial = new THREE.MeshStandardMaterial({
         metalness: 0,
         roughness: 0.2,
-        map: new THREE.TextureLoader().load('../images/tile.png'),
-        normalMap: new THREE.TextureLoader().load('../images/tile_normal.png')
+        map: new THREE.TextureLoader().load('https://aguba.github.io/GraphicsFinal/images/tile.png'),
+        normalMap: new THREE.TextureLoader().load('https://aguba.github.io/GraphicsFinal/images/tile_normal.png')
     });
 
     boxGeometry = new THREE.BoxGeometry(1, 1, 1);
